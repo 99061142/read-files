@@ -1,5 +1,11 @@
 import tkinter as tk
 from tkinter import ttk
+import yaml
+
+# Get the prices of all the items
+prices_information = open("ice-shop/settings.yml", "r")
+prices = yaml.safe_load(prices_information)
+
 
 window = tk.Tk() # Make the window
 
@@ -8,38 +14,38 @@ window = tk.Tk() # Make the window
 items = {
     "customer": {
         "scoop": {
-            "price": 0.95,
+            "price": prices['bolletjes'],
             "amount": 0,
         },
 
         "cone": {
-            "price": 1.25,
+            "price": prices['hoorentjes'],
             "amount": 0,
         },
 
         "cup": {
-            "price":  0.75,
+            "price": prices['bakjes'],
             "amount": 0,
         },
         
         "whipped_cream": {
-            "price": 0.5,
+            "price": prices['toppings']['slagroom'],
             "amount": 0,
         },
             
         "sprinkles": {
-            "price": 0.3,
+            "price": prices['toppings']['bottetjes'],
             "amount": 0,
         },
 
         "caramel_sauce": {
             "cone": {
-                "price": 0.6,
+                "price": prices['toppings']['caramel']['hoorentje'],
                 "amount": 0
             },
 
             "cup": {
-                "price": 0.9,
+                "price": prices['toppings']['caramel']['bakje'],
                 "amount": 0
             }
         }
@@ -47,7 +53,7 @@ items = {
 
     "business": {
         "litre": {
-            "price": 9.8,
+            "price": prices['liter'],
             "amount": 0
         }
     }
@@ -67,7 +73,7 @@ importance_num = 0 # Index for the dictionary of the function information
 question_num = 0
 function_importance_num = 0
 
-vat_percentage = 6 # VAT %
+vat_percentage = prices['btw'] # VAT %
 
 
 flavour_amounts = []
