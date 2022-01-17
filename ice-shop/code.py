@@ -244,7 +244,7 @@ def bought_item_information():
 
     receipt_price = 0
 
-    for key, item_information in zip(items[role], items[role].values()):            
+    for key, item_information in zip(items[role], items[role].values()):     
         try:
             item_information[cone_cup.get()]
         except KeyError:
@@ -253,19 +253,49 @@ def bought_item_information():
         else:
             amount = item_information[cone_cup.get()]['amount']
             price = item_information[cone_cup.get()]['price']
+        
 
-    
-        # Check with the role, if the user bought the item
         if amount > 0:
-            receipt_price += price
+            if key == "whipped_cream" or key == "sprinkles" or key == "caramel_sauce":
+                route_info = 'toppings'
 
-            bought_items['items'][key] = {}
-            bought_items['items'][key]['amount'] = amount
-            bought_items['items'][key]['price'] =  "{:.2f}".format(price)
-            bought_items['items'][key]['total_price'] = "{:.2f}".format(amount * price)
+                try:
+                    bought_items['items'][route_info]
+                except KeyError:
+                    bought_items['items'][route_info] = {}
+
+        
+            else:
+                route_info = key
+
+                try:
+                    bought_items['items'][route_info]
+                except KeyError:
+                    bought_items['items'][route_info] = {}
+
+            
+            try:
+                bought_items['items'][route_info]['amount']
+                bought_items['items'][route_info]['price']
+            except KeyError:
+                bought_items['items'][route_info]['amount'] = amount
+                bought_items['items'][route_info]['price'] = price
+            else:
+                bought_items['items'][route_info]['amount'] += amount
+                bought_items['items'][route_info]['price'] += price
+
+    for item in bought_items['items']:
+        item_amount = bought_items['items'][item]['amount']
+        item_price = bought_items['items'][item]['price']
+        item_end_price = round(item_amount * item_price, 2)
+        
+        bought_items['items'][item]['end_price'] = item_end_price
+        bought_items['items'][item]['price'] = round(item_price, 2)
+    
+        receipt_price += item_end_price
     else:
-        bought_items['end_price']['total_price'] = "{:.2f}".format(receipt_price)
-        bought_items['end_price']['vat_price'] = "{:.2f}".format(receipt_price / 100 * vat_percentage)
+        bought_items['end_price'] = receipt_price
+
 
     return bought_items
 
@@ -274,23 +304,27 @@ def bought_item_information():
 def show_receipt():
     clear_window()
 
+    topping_options = list( prices['toppings'].keys() )
+
+
     bought_items = bought_item_information()
 
 
     tk.Label(text='---------["Papi Gelato"]---------', font=('arial', 14)).grid(pady=('5', '10')) # Receipt start
 
     # For every item that the user can buy
-    for key in bought_items['items']:
+    for key in bought_items['items']:    
         item_amount = bought_items['items'][key]['amount']
         item_price = bought_items['items'][key]['price']
-        total_item_price = bought_items['items'][key]['total_price']
+        total_item_price = bought_items['items'][key]['end_price']
+
 
         if "_" in key:
             key = key.replace("_", " ")
     
         tk.Label(text=f"{key.capitalize()}           {item_amount} * {item_price}   = €{total_item_price}", font=('arial', 14)).grid(pady=('0', '5')) # Show the item, amount, price and the total price for the item
     else:
-        receipt_price = bought_items['end_price']['total_price']
+        receipt_price = bought_items['end_price']
 
         # Make the ending of the receipt
         tk.Label(text="                              ---------", font=('arial', 14)).grid(pady=('0', '5'))  
@@ -298,7 +332,7 @@ def show_receipt():
 
         # If the users role is business
         if user_role.get() == "business":
-            vat_price = bought_items['end_price']['vat_price']
+            vat_price = round(bought_items['end_price'] / 100 * vat_percentage)
 
             tk.Label(text=f"VAT ({vat_percentage}%)               = €{vat_price}", font=('arial', 14)).grid() # Show the VAT price
 
