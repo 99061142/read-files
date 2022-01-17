@@ -1,10 +1,10 @@
 import tkinter as tk
 from tkinter import ttk
-import yaml
+from yaml import safe_load
 
 # Get the prices of all the items
 prices_information = open("ice-shop/settings.yml", "r")
-prices = yaml.safe_load(prices_information)
+prices = safe_load(prices_information)
 
 
 window = tk.Tk() # Make the window
@@ -66,18 +66,14 @@ scoop_litre = tk.StringVar() # Information if the user must choose the amount of
 cone_cup = tk.StringVar() # Users choice for a cone or a cup
 label_text = tk.StringVar() # Text inside the label
 buy_more = tk.StringVar() # If the user wants the receipt
-topping = tk.StringVar()
-
+topping = tk.StringVar() # Topping that the user bought
 
 importance_num = 0 # Index for the dictionary of the function information
 question_num = 0
 function_importance_num = 0
 
 vat_percentage = prices['btw'] # VAT %
-
-
-flavour_amounts = []
-
+flavour_amounts = [] # Amount for the flavours
 
 
 # Clear the window
@@ -169,37 +165,43 @@ def validate_amount():
 
 # Check if the user chose a flavour for every scoop / litre 
 def validate_flavour():
-    validation = True
-    flavour_total_amount = 0
-    max_amount = int(scoops_litres_amount.get())
+    flavour_total_amount = 0 # Total scoops / litre the user added to the flavours
+    max_amount = int(scoops_litres_amount.get()) # Max amount of scoops / litres the user can add
 
+    # Check every amount the user added to a flavour
     for flavour_amount in flavour_amounts:
+        # If it is not an number
         if not flavour_amount.get().isdigit():
             break
         else:
-            flavour_total_amount += int(flavour_amount.get())
+            flavour_total_amount += int(flavour_amount.get()) # Add the users amount to the total amount
     
-    else:
+    # If every amount was an number
+    else:   
+        # If the user added too much
         if flavour_total_amount > max_amount:
             difference = flavour_total_amount - max_amount 
 
             message = f"You added {difference} {scoop_litre.get()}(s) too much"
         
+        # If the user did not add every scoop / litre
         elif flavour_total_amount < max_amount:
             difference = max_amount - flavour_total_amount 
 
             message = f"You can add {difference} more {scoop_litre.get()}(s)"
 
+        # If the user did not add every scoop / litre
         if flavour_total_amount != max_amount:
             label_text.set(message)
 
+        # If the user added every scoop / litre 
         else:
             make_dictionary_route()
 
 
 # Check if the user wants to see the receipt
 def validate_ask_receipt():
-    add_items()
+    add_items() # Add the items to the receipt
 
     if buy_more.get() == "yes":
         item_values() # Reset the values
@@ -209,6 +211,7 @@ def validate_ask_receipt():
         show_receipt() # Show the receipt to the user
 
 
+# Make / reset the variables
 def item_values():
     global flavour_amounts
 
@@ -222,16 +225,18 @@ def item_values():
 
 # Add the items to the receipt dictionary
 def add_items():
-    amount = int(scoops_litres_amount.get())
-    role = user_role.get()
+    amount = int(scoops_litres_amount.get()) # Amount of scoops / litres
+    role = user_role.get() # Users role
     
 
-    items[role][scoop_litre.get()]['amount'] += amount
+    items[role][scoop_litre.get()]['amount'] += amount # Add the amount to the scoops / litres
 
+    # If the user could buy a cone or cup
     if cone_cup.get() and user_role.get() == "customer":
-        items[role][cone_cup.get()]['amount'] += 1
+        items[role][cone_cup.get()]['amount'] += 1 # Add the cone or cup
 
     if topping.get() != "none" and topping.get():
+        # Add the flavour 
         bought_topping = topping.get().replace(" ", "_").lower()
 
         items[role][bought_topping]['amount'] += 1
@@ -239,12 +244,14 @@ def add_items():
 
 # Add the items that the user bought to the receipt
 def bought_item_information():
-    bought_items = {'items': {}, 'end_price': {}}
-    role = user_role.get()
+    bought_items = {'items': {}, 'end_price': {}} # Receipt information
+    role = user_role.get() # Users role
 
-    receipt_price = 0
+    receipt_price = 0 # Total receipt price (Exclusive VAT)
 
+    # Check every item the user could buy
     for key, item_information in zip(items[role], items[role].values()):     
+        # Get the amount that the user bought / price of a single item
         try:
             item_information[cone_cup.get()]
         except KeyError:
@@ -254,26 +261,29 @@ def bought_item_information():
             amount = item_information[cone_cup.get()]['amount']
             price = item_information[cone_cup.get()]['price']
         
-
-        if amount > 0:
+        # If the user bought the item
+        if amount > 0:  
+            # If the item is a topping
             if key == "whipped_cream" or key == "sprinkles" or key == "caramel_sauce":
-                route_info = 'toppings'
+                route_info = "toppings"
 
+                # Add the route to the receipt dictionary
                 try:
                     bought_items['items'][route_info]
                 except KeyError:
                     bought_items['items'][route_info] = {}
 
-        
+            # If the item is not an topping
             else:
                 route_info = key
 
+                # Add the route to the receipt dictionary
                 try:
                     bought_items['items'][route_info]
                 except KeyError:
                     bought_items['items'][route_info] = {}
 
-            
+            # Add the total amount and the price of a single item to the receipt dictionary
             try:
                 bought_items['items'][route_info]['amount']
                 bought_items['items'][route_info]['price']
@@ -284,47 +294,49 @@ def bought_item_information():
                 bought_items['items'][route_info]['amount'] += amount
                 bought_items['items'][route_info]['price'] += price
 
+    # For every item the user bought
     for item in bought_items['items']:
-        item_amount = bought_items['items'][item]['amount']
+        item_amount = bought_items['items'][item]['amount'] # Total amount of the item
+
+        # Price of a single item
         item_price = bought_items['items'][item]['price']
-        item_end_price = round(item_amount * item_price, 2)
-        
-        bought_items['items'][item]['end_price'] = item_end_price
         bought_items['items'][item]['price'] = round(item_price, 2)
+
+        # Total price of the item
+        item_end_price = round(item_amount * item_price, 2)
+        bought_items['items'][item]['end_price'] = item_end_price
+
+
     
-        receipt_price += item_end_price
+        receipt_price += item_end_price # Add the total price to the receipt price
     else:
         bought_items['end_price'] = receipt_price
 
 
-    return bought_items
+    return bought_items # Return the receipt dictionary
 
 
 # Show the bought items to the user
 def show_receipt():
-    clear_window()
+    clear_window() # Clear the whole window
 
-    topping_options = list( prices['toppings'].keys() )
-
-
-    bought_items = bought_item_information()
+    bought_items = bought_item_information() # Get all the item information that the user bought
 
 
     tk.Label(text='---------["Papi Gelato"]---------', font=('arial', 14)).grid(pady=('5', '10')) # Receipt start
 
     # For every item that the user can buy
     for key in bought_items['items']:    
-        item_amount = bought_items['items'][key]['amount']
-        item_price = bought_items['items'][key]['price']
-        total_item_price = bought_items['items'][key]['end_price']
-
+        item_amount = bought_items['items'][key]['amount'] # Total item amount
+        item_price = bought_items['items'][key]['price'] # Price of the single item
+        total_item_price = bought_items['items'][key]['end_price'] # Total price of the item
 
         if "_" in key:
             key = key.replace("_", " ")
     
         tk.Label(text=f"{key.capitalize()}           {item_amount} * {item_price}   = €{total_item_price}", font=('arial', 14)).grid(pady=('0', '5')) # Show the item, amount, price and the total price for the item
     else:
-        receipt_price = bought_items['end_price']
+        receipt_price = bought_items['end_price'] # Receipt price (Exclusive VAT)
 
         # Make the ending of the receipt
         tk.Label(text="                              ---------", font=('arial', 14)).grid(pady=('0', '5'))  
@@ -332,11 +344,12 @@ def show_receipt():
 
         # If the users role is business
         if user_role.get() == "business":
-            vat_price = round(bought_items['end_price'] / 100 * vat_percentage)
+            vat_price = round(bought_items['end_price'] / 100 * vat_percentage) # VAT price
 
             tk.Label(text=f"VAT ({vat_percentage}%)               = €{vat_price}", font=('arial', 14)).grid() # Show the VAT price
 
 
+# Make the route for the question
 def make_dictionary_route():
     global function_importance_num
     global question_num
@@ -353,8 +366,8 @@ def make_dictionary_route():
 
 
     if user_role.get() == "business" and len(flavour_amounts) > 0:
-        add_items()
-        show_receipt()
+        add_items() # Add the items to the receipt
+        show_receipt() # Show the receipt
     else:
         question_num += 1 # Go to the next question
 
